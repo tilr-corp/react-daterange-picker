@@ -170,7 +170,7 @@ gulp.task('example-server', function() {
 });
 
 gulp.task('build', ['build-dist', 'build-example', 'build-example-js', 'build-example-scss']);
-gulp.task('develop', ['test-unit', 'build-example', 'watch-example-js', 'watch-example-scss', 'example-server']);
+gulp.task('develop', ['build-example', 'watch-example-js', 'watch-example-scss', 'example-server']);
 
 gulp.task('deploy-example', ['build'], function() {
   return gulp.src('./example/**/*')

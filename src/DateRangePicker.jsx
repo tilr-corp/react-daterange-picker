@@ -17,14 +17,15 @@ import PaginationArrow from './PaginationArrow';
 
 import isMomentRange from './utils/isMomentRange';
 import hasUpdatedValue from './utils/hasUpdatedValue';
-import { getYearMonth, getYearMonthProps } from './utils/getYearMonth';
+import {getYearMonth, getYearMonthProps} from './utils/getYearMonth';
 
 import PureRenderMixin from 'react-addons-pure-render-mixin';
 
 const absoluteMinimum = moment(new Date(-8640000000000000 / 2)).startOf('day');
 const absoluteMaximum = moment(new Date(8640000000000000 / 2)).startOf('day');
 
-function noop() {}
+function noop() {
+}
 
 const DateRangePicker = createClass({
   mixins: [BemMixin, PureRenderMixin],
@@ -58,6 +59,8 @@ const DateRangePicker = createClass({
     singleDateRange: PropTypes.bool,
     showLegend: PropTypes.bool,
     stateDefinitions: PropTypes.object,
+    datesAdded: PropTypes.object,
+    shiftsBeingEdited: PropTypes.array,
     value: CustomPropTypes.momentOrMomentRange,
   },
 
@@ -67,6 +70,7 @@ const DateRangePicker = createClass({
 
     return {
       bemNamespace: null,
+      shiftsBeingEdited: [],
       bemBlock: 'DateRangePicker',
       className: '',
       numberOfCalendars: 1,
@@ -92,6 +96,7 @@ const DateRangePicker = createClass({
       showLegend: false,
       onSelect: noop,
       paginationArrowComponent: PaginationArrow,
+      hoverRange: false,
     };
   },
 
@@ -163,7 +168,7 @@ const DateRangePicker = createClass({
 
     let defs = Immutable.fromJS(stateDefinitions);
 
-    dateStates.forEach(function(s) {
+    dateStates.forEach(function (s) {
       let r = s.range;
       let start = r.start.startOf('day');
       let end = r.end.startOf('day');
@@ -173,7 +178,7 @@ const DateRangePicker = createClass({
           state: defaultState,
           range: moment.range(
             dateCursor,
-            start
+            start,
           ),
         });
       }
@@ -185,12 +190,12 @@ const DateRangePicker = createClass({
       state: defaultState,
       range: moment.range(
         dateCursor,
-        maxDate
+        maxDate,
       ),
     });
 
     // sanitize date states
-    return Immutable.List(actualStates).map(function(s) {
+    return Immutable.List(actualStates).map(function (s) {
       let def = defs.get(s.state);
       return Immutable.Map({
         range: s.range,
@@ -267,12 +272,14 @@ const DateRangePicker = createClass({
   },
 
   onSelectDate(date) {
-    let {selectionType} = this.props;
+    let {selectionType, hoverRange} = this.props;
     let {selectedStartDate} = this.state;
 
     if (selectionType === 'range') {
       if (selectedStartDate) {
         this.completeRangeSelection();
+      } else if (hoverRange) {
+        this.props.clickToEditShfits(date);
       } else if (date && !this.isDateDisabled(date) && this.isDateSelectable(date)) {
         this.startRangeSelection(date);
         if (this.props.singleDateRange) {
@@ -295,6 +302,7 @@ const DateRangePicker = createClass({
     let range;
     let forwards;
 
+
     if (selectionType === 'range') {
       if (selectedStartDate) {
         datePair = Immutable.List.of(selectedStartDate, date).sortBy(d => d.unix());
@@ -302,7 +310,7 @@ const DateRangePicker = createClass({
         forwards = (range.start.unix() === selectedStartDate.unix());
         range = this.sanitizeRange(range, forwards);
         this.highlightRange(range);
-      } else if (!this.isDateDisabled(date) && this.isDateSelectable(date)) {
+      } else if (!this.isDateDisabled(date)) {
         this.highlightDate(date);
       }
     } else {
@@ -357,11 +365,18 @@ const DateRangePicker = createClass({
       this.props.onSelect(range, this.statesForRange(range));
     }
   },
+  withinSelectedRange(date) {
+    return this.dateRangesForDate(date).filter(state => state.get('state') === 'booked').some(i => i.get('range').contains(date));
+  },
 
   highlightDate(date) {
-    this.setState({
-      highlightedDate: date,
-    });
+    // Move this here to ensure the highlight function gets called all the time.
+    if (this.isDateSelectable(date)) {
+      this.setState({
+        highlightedDate: date,
+      });
+    }
+
     if (typeof this.props.onHighlightDate === 'function') {
       this.props.onHighlightDate(date, this.statesForDate(date));
     }
@@ -372,7 +387,7 @@ const DateRangePicker = createClass({
   },
 
   isStartOrEndVisible(props) {
-    const { value, selectionType, numberOfCalendars } = props;
+    const {value, selectionType, numberOfCalendars} = props;
 
     const isVisible = (date) => {
       const yearMonth = getYearMonth(date);
@@ -461,8 +476,8 @@ const DateRangePicker = createClass({
       numberOfCalendars,
       selectionType,
       value,
+      shiftsBeingEdited,
     } = this.props;
-
     let {
       dateStates,
       enabledRange,
@@ -473,7 +488,7 @@ const DateRangePicker = createClass({
     let monthDate = this.getMonthDate();
     let year = monthDate.year();
     let month = monthDate.month();
-    let key = `${ index}-${ year }-${ month }`;
+    let key = `${index}-${year}-${month}`;
     let props;
 
     monthDate.add(index, 'months');
@@ -509,6 +524,7 @@ const DateRangePicker = createClass({
       highlightedRange,
       index,
       key,
+      shiftsBeingEdited,
       selectionType,
       value,
       maxIndex: numberOfCalendars - 1,
@@ -526,7 +542,7 @@ const DateRangePicker = createClass({
     return <CalendarMonth {...props} />;
   },
 
-  render: function() {
+  render: function () {
     let {paginationArrowComponent: PaginationArrowComponent, className, numberOfCalendars, stateDefinitions, selectedLabel, showLegend, helpMessage} = this.props;
 
     let calendars = Immutable.Range(0, numberOfCalendars).map(this.renderCalendar);
@@ -534,11 +550,11 @@ const DateRangePicker = createClass({
 
     return (
       <div className={className.trim()}>
-        <PaginationArrowComponent direction="previous" onTrigger={this.moveBack} disabled={!this.canMoveBack()} />
+        <PaginationArrowComponent direction="previous" onTrigger={this.moveBack} disabled={!this.canMoveBack()}/>
         {calendars.toJS()}
-        <PaginationArrowComponent direction="next" onTrigger={this.moveForward} disabled={!this.canMoveForward()} />
+        <PaginationArrowComponent direction="next" onTrigger={this.moveForward} disabled={!this.canMoveForward()}/>
         {helpMessage ? <span className={this.cx({element: 'HelpMessage'})}>{helpMessage}</span> : null}
-        {showLegend ? <Legend stateDefinitions={stateDefinitions} selectedLabel={selectedLabel} /> : null}
+        {showLegend ? <Legend stateDefinitions={stateDefinitions} selectedLabel={selectedLabel}/> : null}
       </div>
     );
   },

@@ -5,17 +5,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import createClass from 'create-react-class';
 import moment from './moment-range';
-var fs = require('fs');
 import timekeeper from 'timekeeper';
 import RangePicker from '../src';
-
-import Header from './components/header';
-import Footer from './components/footer';
-import GithubRibbon from './components/github-ribbon';
-import CodeSnippet from './components/code-snippet';
-import Install from './components/install';
-import Features from './components/features';
 import QuickSelection from './components/quick-selection';
+
+var fs = require('fs');
 
 const today = moment();
 // freeze date to April 1st
@@ -34,28 +28,25 @@ const DatePickerRange = createClass({
 
   getInitialState() {
     return {
+      datesAdded: {},
       value: this.props.value,
       states: null,
     };
   },
 
-  handleSelect(value, states) {
-    this.setState({value, states});
-  },
-
   render() {
     return (
       <div>
-        <RangePicker {...this.props} onSelect={this.handleSelect} value={this.state.value} />
+        <RangePicker {...this.props} value={this.state.value} datesAdded={this.state.datesAdded}/>
         <div>
           <input type="text"
-            value={this.state.value ? this.state.value.start.format('LL') : ""}
-            readOnly={true}
-            placeholder="Start date"/>
+                 value={this.state.value ? this.state.value.start.format('LL') : ""}
+                 readOnly={true}
+                 placeholder="Start date"/>
           <input type="text"
-            value={this.state.value ? this.state.value.end.format('LL') : ""}
-            readOnly={true}
-            placeholder="End date" />
+                 value={this.state.value ? this.state.value.end.format('LL') : ""}
+                 readOnly={true}
+                 placeholder="End date"/>
         </div>
       </div>
     );
@@ -76,15 +67,16 @@ const DatePickerSingle = createClass({
     });
   },
 
+
   render() {
     return (
       <div>
         <RangePicker {...this.props} onSelect={this.handleSelect}
-          value={this.state.value} />
+                     value={this.state.value}/>
         <div>
           <input type="text"
-            value={this.state.value ? this.state.value.format('LL') : ""}
-            readOnly={true} />
+                 value={this.state.value ? this.state.value.format('LL') : ""}
+                 readOnly={true}/>
         </div>
       </div>
     );
@@ -99,11 +91,11 @@ const DatePickerSingleWithSetDateButtons = createClass({
   },
 
   handleSelect(value) {
-    this.setState({ value });
+    this.setState({value});
   },
 
   setDate(value) {
-    this.setState({ value });
+    this.setState({value});
   },
 
   render() {
@@ -118,12 +110,12 @@ const DatePickerSingleWithSetDateButtons = createClass({
 
     return (
       <div className="singleDateRange">
-        <RangePicker {...this.props} onSelect={this.handleSelect} value={this.state.value} />
-        <QuickSelection dates={dateRanges} value={this.state.value} onSelect={this.setDate} />
+        <RangePicker {...this.props} onSelect={this.handleSelect} value={this.state.value}/>
+        <QuickSelection dates={dateRanges} value={this.state.value} onSelect={this.setDate}/>
         <div>
           <input type="text"
-            value={this.state.value ? this.state.value.format('LL') : ''}
-            readOnly={true} />
+                 value={this.state.value ? this.state.value.format('LL') : ''}
+                 readOnly={true}/>
         </div>
       </div>
     );
@@ -139,38 +131,38 @@ const DatePickerRangeWithSetRangeButtons = createClass({
   },
 
   handleSelect(value, states) {
-    this.setState({ value, states });
+    this.setState({value, states});
   },
 
-  setRange(value){
-    this.setState({ value });
+  setRange(value) {
+    this.setState({value});
   },
 
   render() {
     const dateRanges = {
       'Last 7 days': moment.range(
         today.clone().subtract(7, 'days'),
-        today.clone()
+        today.clone(),
       ),
       'This Year': moment.range(
         today.clone().startOf('year'),
-        today.clone()
+        today.clone(),
       ),
     };
 
     return (
       <div className="rangeDateContainer">
-        <QuickSelection dates={dateRanges} value={this.state.value} onSelect={this.setRange} />
-        <RangePicker {...this.props} onSelect={this.handleSelect} value={this.state.value} />
+        <QuickSelection dates={dateRanges} value={this.state.value} onSelect={this.setRange}/>
+        <RangePicker {...this.props} onSelect={this.handleSelect} value={this.state.value}/>
         <div>
           <input type="text"
-            value={this.state.value ? this.state.value.start.format('LL') : ''}
-            readOnly={true}
-            placeholder="Start date"/>
+                 value={this.state.value ? this.state.value.start.format('LL') : ''}
+                 readOnly={true}
+                 placeholder="Start date"/>
           <input type="text"
-            value={this.state.value ? this.state.value.end.format('LL') : ''}
-            readOnly={true}
-            placeholder="End date" />
+                 value={this.state.value ? this.state.value.end.format('LL') : ''}
+                 readOnly={true}
+                 placeholder="End date"/>
         </div>
       </div>
     );
@@ -180,10 +172,27 @@ const DatePickerRangeWithSetRangeButtons = createClass({
 var mainCodeSnippet = fs.readFileSync(__dirname + '/code-snippets/main.jsx', 'utf8');
 var i18nCodeSnippet = fs.readFileSync(__dirname + '/code-snippets/i18n.jsx', 'utf8');
 
+const PENDING = 'pending';
+const BOOKED = 'booked';
+const EDITING = 'editing';
 const Index = createClass({
+
   getInitialState() {
     return {
       locale: 'en',
+      shifts: [],
+      isBeingEdited: [],
+      checked: {},
+      hoverRange: false,
+      dateStates: [
+        {
+          state: BOOKED,
+          range: moment.range(
+            moment('2016-04-01'),
+            moment('2016-04-10'),
+          ),
+        },
+      ],
     };
   },
 
@@ -202,140 +211,411 @@ const Index = createClass({
       locale: locale,
     });
   },
+  onSelect(value, states) {
+    //  We need to add the value to datestates
+    this.state.dateStates.push({state: PENDING, range: value});
+    this.setState(previousState => ({
+      dateStates: previousState.dateStates,
+    }));
+    this.shouldIBeChecked();
 
+  },
+  doesDateContainDay(range, dayNumber) {
+    return Array.from(range.by('days')).some(day => day.format('d') === dayNumber);
+  },
+  dateStateFilter(stateName) {
+    const {dateStates} = this.state;
+    const stateNa = Array.isArray(stateName) ? stateName : [stateName];
+    return dateStates.filter(state => stateNa.includes(state.state));
+  },
+  dateStateMerge(item, stateName, reverse) {
+    return this.dateStateFilter(stateName).concat(item);
+  },
+  getStateForDate(date) {
+    return this.state.dateStates.find(state => state.range.contains(date));
+  },
+  getAndRemoveStateForDate(date) {
+    this.getStateForDate(date);
+
+  },
+  changeStateToState(fromState, toState) {
+    const states = [...this.state.dateStates];
+    const newStates = states.map(item => {
+      if (item.state === fromState) {
+        item.state = toState;
+      }
+      return item;
+    });
+
+    this.setState({
+      dateStates: newStates,
+    });
+
+
+  },
+  changeSingleStateToo(date, state) {
+    console.log(date);
+    const newState = this.getStateForDate(date).state;
+    newState.state = state;
+    this.setState(previous => ({
+        dateStates: [...previous, ...newState],
+      }),
+    )
+    ;
+
+  },
+  changeRangeStateRight(date, stateTo) {
+    const state = this.getStateForDate(date);
+    const {start: originalStart, end: originalEnd} = state.range;
+    let start;
+    start = originalStart.clone();
+    const addToState = [
+      {
+        state: stateTo,
+        range: moment.range(originalStart, originalStart),
+      },
+      {
+        state: state.state,
+        range: moment.range(start.add(1, 'd'), originalEnd),
+      },
+    ];
+
+    this.setState({
+      dateStates: this.dateStateMerge(addToState, [EDITING, BOOKED]),
+    });
+  },
+  changeRangeStateLeft(date, stateTo) {
+    const state = this.getStateForDate(date);
+    const {start: originalStart, end: originalEnd} = state.range;
+    let end;
+    end = originalEnd.clone();
+    const addToState = [
+      {
+        state: state.state,
+        range: moment.range(originalStart, end.subtract(1, 'd')),
+      },
+      {
+        state: stateTo,
+        range: moment.range(originalEnd, originalEnd),
+
+      },
+    ];
+
+    this.setState({
+      dateStates: this.dateStateMerge(addToState, EDITING),
+    });
+  },
+  changeRangeStateToo(date, originalState, stateTo) {
+    const range = this.getStateForDate(date).range;
+    const {start: originalStart, end: originalEnd} = range;
+    let start, diff, end;
+    start = originalStart.clone();
+    diff = moment.duration(date.diff(start, 'days') - 1, 'days');
+    end = originalStart.add(diff, 'days');
+    const addToState = [
+      {
+        state: originalState,
+        range: moment.range(start, end),
+      },
+      {
+        state: stateTo,
+        range: moment.range(date, date),
+      },
+      {
+        state: originalState,
+        range: moment.range(end.add(2, 'd'), originalEnd),
+      },
+    ];
+    this.setState({
+      dateStates: this.dateStateMerge(addToState, [EDITING, BOOKED]),
+    });
+  },
+  splitDateRange(dates, stateTo = 'available') {
+    const datesToBreakOn = Array.isArray(dates) ? dates : [dates];
+    return datesToBreakOn.map((date, idx) => {
+      let originalState = this.getStateForDate(date).state;
+      if (this.isSingle(date)) {
+        this.changeSingleStateToo(date, EDITING);
+      } else if (this.isShiftWithinRange(date)) {
+        this.changeRangeStateToo(date, originalState, stateTo);
+      } else if (this.isStateAfterDateDifferent(date)) {
+        this.changeRangeStateLeft(date, EDITING);
+
+      } else if (this.isStateBeforeDateDifferent(date)) {
+        this.changeRangeStateRight(date, EDITING);
+      } else {
+        console.log("you're in a pickle");
+      }
+    });
+
+  },
+  handleDayChange(event) {
+    const dayValue = event.target.value;
+
+    const newDateState = this.dateStateFilter('pending').map(state => {
+      if (!this.doesDateContainDay(state.range, dayValue)) {
+        return state;
+      }
+
+      const breakDates = Array.from(state.range.by('days')).filter(date => date.format('d') === dayValue);
+      const breakDateCount = breakDates.length;
+
+      const {start: originalStart, end: originalEnd} = state.range;
+
+      return [...Array(breakDateCount + 1)].map((_, i) => {
+        let start;
+        let end;
+        // First Loop
+        if (i === 0) {
+          start = originalStart;
+          end = breakDates[i].subtract(1, 'd');
+        } else if (i === breakDateCount) {
+          //last
+          start = breakDates[i - 1].add(2, 'd');
+          end = originalEnd;
+        } else {
+          start = breakDates[i - 1].add(2, 'd');
+          end = breakDates[i].subtract(1, 'd');
+        }
+
+        return {
+          state: state.state,
+          range: moment.range(moment(start), moment(end)),
+        };
+
+      });
+
+
+    });
+
+    this.setState({
+      dateStates: this.dateStateMerge(newDateState.flat(3), 'booked'),
+    }, this.shouldIBeChecked);
+  },
+
+  shouldIBeChecked() {
+    const {dateStates} = this.state;
+    const allDays = this.dateStateFilter('pending').reduce((mainObject, state) => {
+      const days = Array.from(state.range.by('days')).reduce((obj, item) => {
+        obj[item.format('d')] = true;
+        return obj;
+      }, {});
+      return {...mainObject, ...days};
+    }, {});
+    this.setState({
+      checked: allDays,
+    });
+  },
+  confirmState() {
+    const {dateStates} = this.state;
+    const startTime = '10am';
+    const endTime = '5pm';
+    const breakMins = null;
+
+    const newState = this.dateStateFilter(PENDING).map(state => {
+      const shifts = [];
+      Array.from(state.range.by('days')).forEach((date) => {
+        shifts.push({
+          date,
+          id: Math.floor(Math.random() * (1000 - 4)) + 4,
+          start: startTime,
+          end: endTime,
+          breaks: breakMins,
+        });
+      });
+      this.setState(pre => ({
+        shifts: [...pre.shifts, ...shifts],
+      }));
+
+      return {...state, state: 'booked'};
+    });
+    this.setState({
+      dateStates: this.dateStateMerge(newState, BOOKED),
+    }, this.shouldIBeChecked);
+
+  },
+  hasConfirmedShifts() {
+    return this.state.shifts.length > 0;
+  },
+  getEachShift() {
+    return this.state.shifts;
+  },
+  isSingle(date) {
+    return this.isStateBeforeDateDifferent(date) && this.isStateAfterDateDifferent(date);
+  },
+  isStateBeforeDateDifferent(date) {
+    const day = moment.duration(1, 'd');
+    const dateToCheck = date.clone();
+    return !this.state.dateStates.filter(state => state.range.contains(dateToCheck)).some(i => i.range.contains(dateToCheck.subtract(day)));
+  },
+  isStateAfterDateDifferent(date) {
+    const day = moment.duration(1, 'd');
+    const dateToCheck = date.clone();
+    return !this.state.dateStates.filter(state => state.range.contains(dateToCheck)).some(i => i.range.contains(dateToCheck.add(day)));
+  },
+  isShiftWithinRange(date) {
+    return !this.isStateBeforeDateDifferent(date) && !this.isStateAfterDateDifferent(date);
+  },
+  deselectState(stateName = 'pending') {
+    const {dateStates} = this.state;
+    const newState = dateStates.filter(state => state.state !== stateName);
+    this.setState({
+      dateStates: newState,
+    }, this.shouldIBeChecked);
+  },
+  componentDidMount() {
+    this.shouldIBeChecked();
+  },
+  addSingleDateState(date, stateType) {
+    const {dateStates} = this.state;
+
+    const newState = {
+      state: stateType,
+      range: moment.range(date, date),
+    };
+
+    dateStates.unshift(newState);
+
+    this.setState({
+      dateStates,
+    });
+
+  },
+  addEditedShift(dateToEdit) {
+    this.setState(previous => ({
+      isBeingEdited: previous.isBeingEdited.concat(dateToEdit),
+    }));
+  },
+  removeEditShift(dateToEdit) {
+    const {isBeingEdited} = this.state;
+    const isEdit = [...isBeingEdited];
+    isEdit.splice(isBeingEdited.findIndex(date => date.isSame(dateToEdit)), 1);
+    this.setState({
+      isBeingEdited: isEdit,
+    });
+    //this.removeStateFromEdit(dateToEdit);
+  },
+  editShift(date) {
+    const {isBeingEdited} = this.state;
+    const dateToEdit = this.state.shifts.find(shift => shift.date.isSame(date, 'day'));
+
+    if (isBeingEdited.some(d => d.isSame(dateToEdit.date))) {
+      this.removeEditShift(dateToEdit.date);
+    } else {
+      this.addEditedShift(dateToEdit.date);
+    }
+  },
+  nHighlightDate(date, state) {
+    const withinBooked = this.dateStateFilter([BOOKED, EDITING]).filter(d => d.range.contains(date));
+    if (withinBooked.length >= 1) {
+      const otherStates = this.state.dateStates.filter(s => !s.range.contains(date))
+      const s = otherStates.map(stat => ({...stat, state: PENDING}))
+      this.setState({
+        hoverRange: true,
+        dateStates: [...s, ...withinBooked],
+      });
+    } else if (this.state.hoverRange) {
+      this.changeStateToState(PENDING, BOOKED);
+      this.setState({
+        hoverRange: false,
+      });
+
+    }
+
+  },
+  clickToEditShfits(date) {
+    console.log(date, "ASFAS");
+    const state = this.getStateForDate(date);
+    this.state.shifts.filter(shift => state.range.contains(shift.date)).forEach(s => this.editShift(s.date))
+  },
   render() {
     const stateDefinitions = {
       available: {
         color: '#ffffff',
         label: 'Available',
       },
-      enquire: {
-        color: '#ffd200',
-        label: 'Enquire',
-      },
-      unavailable: {
+      [BOOKED]: {
         selectable: false,
-        color: '#78818b',
-        label: 'Unavailable',
+        color: '#2696BA',
+        label: 'booked',
+      },
+      [PENDING]: {
+        selectable: false,
+        color: '#87BAC9',
+        label: 'pending',
+      },
+      [EDITING]: {
+        selectable: false,
+        color: 'red',
+        label: 'editing',
       },
     };
-
-    const dateRanges = [
-      {
-        state: 'enquire',
-        range: moment.range(
-          moment().add(2, 'weeks').subtract(5, 'days'),
-          moment().add(2, 'weeks').add(6, 'days')
-        ),
-      },
-      {
-        state: 'unavailable',
-        range: moment.range(
-          moment().add(3, 'weeks'),
-          moment().add(3, 'weeks').add(5, 'days')
-        ),
-      },
-    ];
-
-    const initialStart = moment().add(1, 'weeks').startOf('day');
-    const initialEnd = moment().add(1, 'weeks').add(3, 'days').startOf('day');
-
     return (
       <main>
-        <Header />
-        <GithubRibbon />
-
         <div className="content">
           <div className="example">
             <DatePickerRange
-              firstOfWeek={1}
+              firstOfWeek={0}
               numberOfCalendars={2}
               selectionType='range'
               minimumDate={new Date()}
               maximumDate={moment().add(2, 'years').toDate()}
               stateDefinitions={stateDefinitions}
-              dateStates={dateRanges}
+              dateStates={this.state.dateStates}
               defaultState="available"
-              value={moment.range(initialStart, initialEnd)}
-              showLegend={true}
-              />
-            <CodeSnippet language="javascript">
-              {processCodeSnippet(mainCodeSnippet)}
-            </CodeSnippet>
+              showLegend={false}
+              onSelect={this.onSelect}
+              shiftsBeingEdited={this.state.isBeingEdited}
+              singleDateRange={true}
+              onHighlightRange={this.nHighlightRange}
+              onHighlightDate={this.nHighlightDate}
+              onSelectStart={this.onSelectStart}
+              hoverRange={this.state.hoverRange}
+              clickToEditShfits={this.clickToEditShfits}
+
+            />
+
+            <p>Days of the week selected</p>
+            <input type="checkbox" name="day" value="0"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[0]}/> Sun
+            <input type="checkbox" name="day" value="1"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[1]}/> Mo
+            <input type="checkbox" name="day" value="2"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[2]}/> Tue
+            <input type="checkbox" name="day" value="3"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[3]}/> Wed
+            <input type="checkbox" name="day" value="4"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[4]}/> Th
+            <input type="checkbox" name="day" value="5"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[5]}/> Fr
+            <input type="checkbox" name="day" value="6"
+                   onChange={this.handleDayChange}
+                   checked={this.state.checked[6]}/> Sat
+
+            <button onClick={() => this.deselectState()}>Deselect</button>
+            <button onClick={() => this.confirmState()}>Confirm</button>
           </div>
+          {this.hasConfirmedShifts && this.getEachShift().map(shift => {
+            return (<div style={{display: 'flex', justifyContent: 'space-between'}} key={shift.id}>
+              <input type="checkbox" name={shift.id} value={shift.id}
+                     onChange={() => this.editShift(shift.date)}
+                     checked={this.state.isBeingEdited.some(s => s.isSame(shift.date), 'day')}/>
 
-          <Features />
-          <Install />
+              <div>{shift.date.format('ddd, MMM Do')}</div>
+              <div>{shift.start} </div>
+              <div>{shift.end}</div>
+              <div>{shift.breaks}</div>
+            </div>);
+          })
 
-          <div className="examples">
-            <h2>Examples</h2>
-
-            <div className="example">
-              <h4>Range with no date states</h4>
-              <DatePickerRange
-                numberOfCalendars={2}
-                selectionType="range"
-                minimumDate={new Date()} />
-            </div>
-
-            <div className="example">
-              <h4>Range with day-long ranges allowed</h4>
-              <DatePickerRange
-                numberOfCalendars={2}
-                selectionType="range"
-                singleDateRange={true}
-                minimumDate={new Date()} />
-            </div>
-
-            <div className="example">
-              <h4>Single with no date states</h4>
-              <DatePickerSingle
-                numberOfCalendars={2}
-                selectionType="single"
-                minimumDate={new Date()} />
-            </div>
-
-            <div className="example">
-              <h4>
-                i18n support based on moment/locale &nbsp;&nbsp;
-                <select ref="locale" onChange={this._selectLocale} name="locale" id="locale">
-                  <option value="en">EN</option>
-                  <option value="ar-sa">AR</option>
-                  <option value="fr">FR</option>
-                  <option value="it">IT</option>
-                  <option value="es">ES</option>
-                  <option value="de">DE</option>
-                  <option value="ru">RU</option>
-                </select>
-              </h4>
-              <DatePickerRange
-                locale={this.state.locale}
-                numberOfCalendars={2}
-                selectionType="range"
-                minimumDate={new Date()} />
-              <CodeSnippet language="javascript">
-                {processCodeSnippet(i18nCodeSnippet)}
-              </CodeSnippet>
-            </div>
-
-            <div className="example">
-              <h4>Setting Calendar Externally</h4>
-              <DatePickerSingleWithSetDateButtons
-                numberOfCalendars={1}
-                selectionType="single"
-                />
-            </div>
-
-            <div className="example">
-              <h4>Setting Calendar Range Externally</h4>
-              <DatePickerRangeWithSetRangeButtons
-                numberOfCalendars={2}
-                selectionType="range"
-                />
-            </div>
-          </div>
+          }
         </div>
-        <Footer />
       </main>
     );
   },

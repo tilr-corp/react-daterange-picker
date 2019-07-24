@@ -12,18 +12,14 @@ const CalendarSelection = createClass({
 
   propTypes: {
     modifier: PropTypes.string,
-    pending: PropTypes.bool.isRequired,
   },
 
   render() {
-    let {modifier, pending} = this.props;
+    let {modifier, style} = this.props;
     let modifiers = {[modifier]: true};
-    let states = {
-      pending,
-    };
 
     return (
-      <div className={this.cx({states, modifiers})} />
+      <div className={this.cx({modifiers})} style={style} />
     );
   },
 });

@@ -1,10 +1,13 @@
 $arrow-size: 8px !default;
-$selection-radius: 5px !default;
+$selection-radius: 10px !default;
+$selection-radius-percent: 50% !default;
 $selection-margin: 5px !default;
+$tilr-color: #2696BA;
 $ns: DateRangePicker !default;
 
 .#{$ns} {
   display: inline-block;
+  font-family: Rubik;
   margin-bottom: 10px;
   padding: 0;
   position: relative;
@@ -34,7 +37,7 @@ $ns: DateRangePicker !default;
     border: 1px solid rgba(#000, .25);
 
     &--selection {
-      background-color: #ed5434;
+      background-color: #2696BA;
     }
   }
 
@@ -81,7 +84,7 @@ $ns: DateRangePicker !default;
     &--previous {
       border-left: $arrow-size solid transparent;
       border-right: $arrow-size solid #aaa;
-      right: 30px / 2 - ($arrow-size / 2);
+      right: 10px / 2 - ($arrow-size / 2);
     }
 
     &--next {
@@ -91,8 +94,9 @@ $ns: DateRangePicker !default;
     }
   }
 
+  //Changes the month display
   &__Month {
-    color: #333;
+    color: #4f514f;
     display: inline-block;
     margin: 0 20px;
     position: relative;
@@ -101,11 +105,12 @@ $ns: DateRangePicker !default;
   }
 
   &__MonthHeader {
-    color: #000;
-    font-size: 14px;
-    font-weight: bold;
+    color: #4f514f;
+    font-size: 18px;
+    opacity: 0.8;
+    font-weight: 500;
     height: 35px;
-    line-height: 35px;
+    line-height: 1.33;
     position: relative;
     text-align: center;
   }
@@ -142,15 +147,25 @@ $ns: DateRangePicker !default;
   &__Date {
     font-size: 12px;
     line-height: 1;
-    padding: 10px 0;
+    padding: 15px 10px;
     text-align: center;
     width: 14.285714285714286%;
   }
 
   &__WeekdayHeading {
-    border-bottom: 1px solid #f4f5f6;
-    color: #000;
+    width: 24px;
+    height: 16px;
+    opacity: 0.4;
+    font-family: Roboto;
+    font-size: 10px;
     font-weight: bold;
+    font-style: normal;
+    font-stretch: normal;
+    line-height: 1.6;
+    letter-spacing: normal;
+    text-align: center;
+    color: #526173;
+
 
     abbr[title] {
       border-bottom-width: 0;
@@ -162,15 +177,11 @@ $ns: DateRangePicker !default;
   }
 
   &__Date {
-    border: 0 solid #f4f5f6;
-    border-right-width: 1px;
+    border: 0 solid #2696BA;
     cursor: pointer;
     overflow: hidden;
     position: relative;
-
-    &:first-child {
-      border-left-width: 1px;
-    }
+    color: black;
 
     &--weekend {
       background-color: #f6f7f9;
@@ -187,6 +198,7 @@ $ns: DateRangePicker !default;
 
     &--is-selected {
       color: #fff;
+
     }
 
     &--is-highlighted {
@@ -211,30 +223,27 @@ $ns: DateRangePicker !default;
   }
 
   &__CalendarSelection {
-    background-color: #ed5434;
-    border: 1px solid darken(#ed5434, 5);
     bottom: $selection-margin;
-    left: 0;
-    position: absolute;
-    right: 0;
     top: $selection-margin;
+    left: 0;
+    right: 0;
+    position: absolute;
+
 
     &--inOtherMonth {
       opacity: .5;
     }
 
     &--start {
-      border-bottom-left-radius: $selection-radius;
-      border-right-width: 0;
-      border-top-left-radius: $selection-radius;
-      left: $selection-margin;
+      border-bottom-left-radius: $selection-radius-percent;
+      border-top-left-radius: $selection-radius-percent;
+      left: 5px
     }
 
     &--end {
-      border-bottom-right-radius: $selection-radius;
-      border-left-width: 0;
-      border-top-right-radius: $selection-radius;
-      right: $selection-margin;
+      border-bottom-right-radius: $selection-radius-percent;
+      border-top-right-radius: $selection-radius-percent;
+      right: 5px;
     }
 
     &--segment {
@@ -243,38 +252,42 @@ $ns: DateRangePicker !default;
     }
 
     &--single {
-      border-radius: $selection-radius;
+      border-radius: $selection-radius-percent;
       left: $selection-margin;
       right: $selection-margin;
     }
 
     &--is-pending {
-      background-color: rgba(#ed5434, .75);
-      border-width: 0;
+      background-color: #87BAC9;
     }
   }
 
   &__CalendarHighlight {
     background-color: rgba(255, 255, 255, .25);
-    border: 1px solid rgba(0, 0, 0, .25);
+    border: 2px solid #2696BA;
     bottom: $selection-margin;
+    top: $selection-margin;
     left: 0;
     position: absolute;
     right: 0;
-    top: $selection-margin;
 
     &--inOtherMonth {
       opacity: .5;
     }
 
+    &--unslected {
+
+    }
+
     &--start {
-      border-bottom-left-radius: $selection-radius;
-      border-right-width: 0;
-      border-top-left-radius: $selection-radius;
-      left: $selection-margin;
+      border-bottom-left-radius: 50%;
+      border-top-left-radius: 50%;
+      left:  $selection-margin;
     }
 
     &--end {
+      //border-bottom-right-radius: 50%;
+      //border-top-right-radius: 50%;
       border-bottom-right-radius: $selection-radius;
       border-left-width: 0;
       border-top-right-radius: $selection-radius;
@@ -282,41 +295,47 @@ $ns: DateRangePicker !default;
     }
 
     &--segment {
+      //border-left-width: 1px;
+      //border-right-width: 1px;
+      //border-color: #2696BA;
       border-left-width: 0;
       border-right-width: 0;
     }
 
     &--single {
+      //left: $selection-margin;
+      //right: $selection-margin;
+      //border-radius: 0;
       background-color: #fff;
-      border: 1px solid darken(#ed5434, 5);
-      border-radius: $selection-radius;
-      left: $selection-margin;
-      right: $selection-margin;
+      color: black;
+      border: 1px solid darken(#2696BA, 5);
+      border-radius: $selection-radius-percent;
+      //left: $selection-margin;
+      //right: $selection-margin;
     }
   }
 
-  &__HalfDateStates {
-    bottom: -50px;
-    left: -50px;
-    position: absolute;
-    right: -50px;
-    top: -50px;
-    transform: rotate(30deg);
-  }
-
   &__FullDateStates {
-    bottom: 0;
+    bottom: $selection-margin;
     left: 0;
+    top: $selection-margin;
     position: absolute;
     right: 0;
-    top: 0;
   }
 
   &__DateLabel {
-    display: block;
     position: relative;
-    text-align: center;
+    display: block;
     width: 100%;
-    z-index: 1;
+    font-family: Rubik;
+    font-size: 14px;
+    font-weight: normal;
+    font-style: normal;
+    font-stretch: normal;
+    line-height: normal;
+    letter-spacing: normal;
+    text-align: center;
+    z-index: 2;
+
   }
 }

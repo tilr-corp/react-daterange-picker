@@ -28,6 +28,7 @@ const CalendarMonth = createClass({
     onYearChange: PropTypes.func,
     value: CustomPropTypes.momentOrMomentRange,
     locale: PropTypes.string,
+    shiftsBeingEdited: PropTypes.array,
   },
 
   setLocale(locale) {
@@ -49,15 +50,23 @@ const CalendarMonth = createClass({
   },
 
   renderDay(date, i) {
-    let {dateComponent: CalendarDate, value, highlightedDate, highlightedRange, hideSelection, enabledRange, ...props} = this.props;
+    let {dateComponent: CalendarDate, dateRangesForDate, value, highlightedDate, highlightedRange, hideSelection, enabledRange, shiftsBeingEdited, ...props} = this.props;
     let d = moment(date).locale(this.props.locale);
+
 
     let isInSelectedRange;
     let isSelectedDate;
     let isSelectedRangeStart;
     let isSelectedRangeEnd;
-
-    if (!hideSelection && value && moment.isMoment(value) && value.isSame(d, 'day')) {
+    let isBeingEdited;
+    // let isHighlightedBetween;
+    // let isHighlightedStart;
+    // let isHighlightedEnd;
+    let activeStates = dateRangesForDate(date).filter(it => it.get('state') === 'pending' || it.get('state') === 'booked' || it.get('state') === 'editing');
+    let isHighlightedStart = activeStates.some(item => item.get('range').start.isSame(date));
+    let isHighlightedEnd = activeStates.some(item => item.get('range').end.isSame(date));
+    let isHighlightedBetween = (activeStates.some(item => item.get('range').contains(date)));
+    if (!hideSelection && (value && moment.isMoment(value) && value.isSame(d, 'day'))) {
       isSelectedDate = true;
     } else if (!hideSelection && value && isMomentRange(value) && value.contains(d)) {
       isInSelectedRange = true;
@@ -65,6 +74,15 @@ const CalendarMonth = createClass({
       isSelectedRangeStart = value.start.isSame(d, 'day');
       isSelectedRangeEnd = value.end.isSame(d, 'day');
     }
+    if (isHighlightedBetween) {
+      isInSelectedRange = true;
+      isSelectedRangeStart = isHighlightedStart;
+      isSelectedRangeEnd = isHighlightedEnd;
+    }
+    // console.log("b", shiftsBeingEdited)
+    isBeingEdited = shiftsBeingEdited.some(shiftDate => shiftDate.isSame(d, 'day'))
+    // console.log("b", isBeingEdited)
+
 
     return (
       <CalendarDate
@@ -80,6 +98,10 @@ const CalendarMonth = createClass({
         isSelectedRangeEnd={isSelectedRangeEnd}
         isInSelectedRange={isInSelectedRange}
         date={d}
+        shiftsBeingEdited={shiftsBeingEdited}
+        isBeingEdited={isBeingEdited}
+        activeStates={activeStates}
+        dateRangesForDate={dateRangesForDate}
         {...props} />
     );
   },

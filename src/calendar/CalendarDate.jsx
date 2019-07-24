@@ -7,9 +7,6 @@ import Immutable from 'immutable';
 import BemMixin from '../utils/BemMixin';
 import CustomPropTypes from '../utils/CustomPropTypes';
 import PureRenderMixin from '../utils/PureRenderMixin';
-import lightenDarkenColor from '../utils/lightenDarkenColor';
-
-import CalendarDatePeriod from './CalendarDatePeriod';
 import CalendarHighlight from './CalendarHighlight';
 import CalendarSelection from './CalendarSelection';
 
@@ -146,14 +143,21 @@ const CalendarDate = createClass({
       isDisabled: disabled,
     } = this.props;
 
+
     let selected = isSelectedDate || isInSelectedRange || isInHighlightedRange;
 
-    return {disabled, highlighted, selected};
+    return {disabled, highlighted: selected ? false : highlighted, selected};
   },
+
+  // @ isHighlightedDate boolean when mouse is hovering over dates
+  // @ isSelectedRange_  boolean, when house has made a selection
+  // @ is Highlighted boolean, previously picked dates that appear on screen
 
   render() {
     let {
       date,
+      dateStates,
+      isBeingEdited,
       dateRangesForDate,
       isSelectedDate,
       isSelectedRangeStart,
@@ -163,15 +167,16 @@ const CalendarDate = createClass({
       isHighlightedRangeStart,
       isHighlightedRangeEnd,
       isInHighlightedRange,
+      activeStates,
+      shiftsBeingEdited,
     } = this.props;
 
+
+    let isAShiftBeingEdited = shiftsBeingEdited.some(d => d.isSame(date, 'day'));
     let bemModifiers = this.getBemModifiers();
     let bemStates = this.getBemStates();
     let pending = isInHighlightedRange;
-
     let color;
-    let amColor;
-    let pmColor;
     let states = dateRangesForDate(date);
     let numStates = states.count();
     let cellStyle = {};
@@ -181,7 +186,7 @@ const CalendarDate = createClass({
     let selectionModifier;
 
     if (isSelectedDate || (isSelectedRangeStart && isSelectedRangeEnd)
-        || (isHighlightedRangeStart && isHighlightedRangeEnd)) {
+      || (isHighlightedRangeStart && isHighlightedRangeEnd)) {
       selectionModifier = 'single';
     } else if (isSelectedRangeStart || isHighlightedRangeStart) {
       selectionModifier = 'start';
@@ -191,54 +196,42 @@ const CalendarDate = createClass({
       selectionModifier = 'segment';
     }
 
-    if (isHighlightedDate) {
+    if (isHighlightedDate && isInSelectedRange ) {
+      highlightModifier = false;
+    } else if (isHighlightedDate ) {
       highlightModifier = 'single';
     }
 
-    if (numStates === 1) {
-      // If there's only one state, it means we're not at a boundary
-      color = states.getIn([0, 'color']);
-
-      if (color) {
-
-        style = {
-          backgroundColor: color,
-        };
-        cellStyle = {
-          borderLeftColor: lightenDarkenColor(color, -10),
-          borderRightColor: lightenDarkenColor(color, -10),
-        };
-      }
+    if (activeStates.count() >= 1) {
+      color = activeStates.getIn([0, 'color']);
     } else {
-      amColor = states.getIn([0, 'color']);
-      pmColor = states.getIn([1, 'color']);
-
-      if (amColor) {
-        cellStyle.borderLeftColor = lightenDarkenColor(amColor, -10);
-      }
-
-      if (pmColor) {
-        cellStyle.borderRightColor = lightenDarkenColor(pmColor, -10);
-      }
+      color = states.getIn([0, 'color']);
     }
+
+    if (color) {
+      style = {
+        backgroundColor: color,
+      };
+    }
+
+
+    if ((isInSelectedRange || isSelectedRangeEnd || isSelectedRangeStart) && shiftsBeingEdited.length >= 1 && !isAShiftBeingEdited) {
+      style.backgroundColor = '#87BAC9';
+    } else if (pending) {
+      style.backgroundColor = '#87BAC9';
+    }
+
 
     return (
       <td className={this.cx({element: 'Date', modifiers: bemModifiers, states: bemStates})}
-        style={cellStyle}
-        onTouchStart={this.touchStart}
-        onMouseEnter={this.mouseEnter}
-        onMouseLeave={this.mouseLeave}
-        onMouseDown={this.mouseDown}>
-        {numStates > 1 &&
-          <div className={this.cx({element: "HalfDateStates"})}>
-            <CalendarDatePeriod period="am" color={amColor} />
-            <CalendarDatePeriod period="pm" color={pmColor} />
-          </div>}
-        {numStates === 1 &&
-          <div className={this.cx({element: "FullDateStates"})} style={style} />}
+          style={cellStyle}
+          onTouchStart={this.touchStart}
+          onMouseEnter={this.mouseEnter}
+          onMouseLeave={this.mouseLeave}
+          onMouseDown={this.mouseDown}>
         <span className={this.cx({element: "DateLabel"})}>{date.format('D')}</span>
-        {selectionModifier ? <CalendarSelection modifier={selectionModifier} pending={pending} /> : null}
-        {highlightModifier ? <CalendarHighlight modifier={highlightModifier} /> : null}
+        {selectionModifier ? <CalendarSelection modifier={selectionModifier} style={style}/> : null}
+        {highlightModifier ? <CalendarHighlight modifier={highlightModifier}/> : null}
       </td>
     );
   },
