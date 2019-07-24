@@ -1,3 +1,3 @@
-import DateRangePicker from './DateRangePicker';
+import DateRangeWithShiftDates from './DateRanageWithShifts';
 
-export default DateRangePicker;
+export default DateRangeWithShiftDates;
